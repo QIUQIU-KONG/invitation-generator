@@ -1,0 +1,35 @@
+# 生成输出
+output/*
+!output/.gitkeep
+
+# 增量追踪（运行时生成）
+generated.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# 虚拟环境
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Office 临时文件
+~$*
+
+# 构建脚本（非交付物）
+_build_*.py
