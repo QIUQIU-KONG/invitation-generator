@@ -2,7 +2,7 @@
 
 从出差人员数据自动生成英文邀请函和答复函（`.docx`），面向出国参加商务会议邀请函场景。
 
-> 🎯 将 HR 手工 30 分钟/批次的邀请函工作压缩10s。
+> 🎯 将 HR 手工 30 分钟/批次的签证函工作压缩到秒级，并通过模板复用、字段校验和知识库匹配显著减少人工录入错误。
 
 ---
 
@@ -24,8 +24,8 @@ SQLite（姓名+部门+职位+性别）
 
 ## 两种使用模式
 
-| 模式 | Excel 模式 | 飞书模式 |
-|---|---|---|
+| 特性 | Excel 模式 | 飞书模式 |
+|------|-----------|----------|
 | 适用场景 | 月初批量处理 | 日常流水增量 |
 | 数据入口 | 本地 `.xlsx` | 飞书多维表格 |
 | 人员信息 | SQLite 知识库自动查询 | SQLite 知识库自动查询 |
@@ -161,6 +161,23 @@ invitation-generator/
 
 **为什么提供两种数据入口？**
 Excel 适合月初大批量；飞书适合日常增量。核心管线完全复用。
+
+## Data Privacy & Security Notes
+
+This repository is prepared for portfolio and educational purposes.
+
+- All names, passport numbers, departments, travel records and company information in this repository are **synthetic demo data**.
+- Do **not** commit real employee information, passport numbers, travel records, Feishu tokens, API keys, generated documents or internal company templates to this repository.
+- Real environment variables (e.g. `FEISHU_BASE_TOKEN`, `FEISHU_TABLE_ID`) should be stored locally and must **not** be committed to GitHub.
+- Files generated under `output/` are ignored by default and should be reviewed before sharing.
+
+## Limitations
+
+- The bundled data is synthetic demo data and does not represent any real company workflow.
+- Generated documents should be **manually reviewed** before real business use.
+- The Feishu mode requires additional local configuration, including Feishu credentials and CLI setup.
+- The Word templates support a fixed set of placeholders and may need adjustment for new document types.
+- The pinyin and position mapping tables cover common cases but may not include all uncommon names or job titles.
 
 ## 许可
 

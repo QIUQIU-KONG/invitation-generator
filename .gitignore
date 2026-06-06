@@ -33,3 +33,18 @@ Thumbs.db
 
 # 构建脚本（非交付物）
 _build_*.py
+
+# 环境变量
+.env
+.env.*
+!.env.example
+
+# 日志
+*.log
+logs/
+
+# 测试
+.pytest_cache/
+htmlcov/
+.coverage
+*.cover
