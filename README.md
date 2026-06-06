@@ -24,11 +24,11 @@ SQLite（姓名+部门+职位+性别）
 
 ## 两种使用模式
 
-| | Excel 模式 | 飞书模式 |
+| 模式 | Excel 模式 | 飞书模式 |
 |---|---|---|
 | 适用场景 | 月初批量处理 | 日常流水增量 |
 | 数据入口 | 本地 `.xlsx` | 飞书多维表格 |
-| 人员信息 | 知识库自动查询 | 知识库自动查询 |
+| 人员信息 | SQLite 知识库自动查询 | SQLite 知识库自动查询 |
 | 运行命令 | `python generate_docs.py xxx.xlsx` | `python generate_docs.py` |
 
 > 两种模式的**核心生成管线完全一致**，只是数据入口不同。人员基础信息（姓名/部门/职位/性别）无论哪种模式都从知识库查询，Excel 只需填工号。
@@ -144,13 +144,12 @@ invitation-generator/
 ## 技术栈
 
 | 组件 | 选型 | 理由 |
-|------|------|------|
+|---|---|---|
 | Excel | openpyxl | 跨平台，无需 Office |
 | Word | python-docx | 操作 OOXML，保留原模板样式 |
 | 数据处理 | pandas | 分组聚合、日期解析 |
-| 日期 | python-dateutil | `relativedelta` 跨月跨年准确 |
-| 知识库 | SQLite | 零配置，单文件 |
-| 飞书 | lark-cli | 飞书官方 CLI |
+| 日期计算 | python-dateutil | 正确处理跨月跨年 |
+| 知识库 | SQLite | 零配置、单文件、适合人员基础信息 |
 
 ## 设计决策
 
