@@ -370,7 +370,9 @@ def _replace_para_text(para, new_text):
 def cleanup_date_artifacts(para):
     import re
     full_text = ''.join(r.text for r in para.runs)
-    full_text = re.sub(r'2026[, ]+2026', '2026', full_text)
+    # 移除模板中日期占位符后面的硬编码年份（如 {{DATE}}, 2026 → 替换后变 "May 20, 2026, 2026"）
+    # 匹配任意年份重复：2026, 2026 / 2027, 2027 等，保留第一个年份
+    full_text = re.sub(r'(\d{4})[, ]+\1', r'\1', full_text)
     if para.runs:
         para.runs[0].text = full_text
         for run in para.runs[1:]:
