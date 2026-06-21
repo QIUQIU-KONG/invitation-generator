@@ -1,125 +1,123 @@
 ---
 name: invitation
 description: >
-  从 Excel 出差数据生成英文邀请函和答复函（.docx），通过 SQLite 知识库自动检索人员基础信息。
-  触发词：邀请函、invitation、生成邀请函、答复函、签证函、visa letter。
+  从飞书多维表格、本地 Excel 或演示 JSON 出差数据生成英文邀请函和答复函（.docx），
+  通过 SQLite 知识库补全人员基础信息，并支持本次记录手动选择模板类型。触发词：
+  邀请函、invitation、生成邀请函、答复函、签证函、visa letter、飞书出差函件自动化。
 ---
 
 # Invitation Letter Generator
 
-从出差数据自动生成英文邀请函 + 答复函。支持两种数据源：本地 Excel 和飞书多维表格。
+使用此 skill 处理邀请函生成项目，核心脚本通常是 `generate_docs.py`，知识库是 `knowledge_base.db`，演示库是 `knowledge_base.example.db`。
 
-## 架构
+## 工作流
 
-```
-Excel / 飞书多维表格（工号、出发时间、返程时间、护照号）
-       ↓
-SQLite 知识库（工号 → 姓名、部门、职位、性别）
-       ↓
-generate_docs.py（业务规则引擎）
-       ↓
-output/*.docx（按部门分组的邀请函 + 答复函）
-```
+1. 确认项目目录包含 `generate_docs.py`、`模板文件/`、`requirements.txt` 和演示数据。
+2. 如果缺少 `knowledge_base.db`，先从 `knowledge_base.example.db` 复制一份工作库。
+3. 优先运行预览检查，确认人员、模板、日期、护照号和缺失项。
+4. 预览无误后再正式生成 Word 文件。
+5. 生成结果写入 `output/`，生成历史写入 `generated.json`。
 
-## 两种生成模式
+## 数据来源
 
-### 模式 A：Excel 本地文件
+支持三种输入：
 
 ```powershell
-# 在项目根目录下执行
-python generate_docs.py path/to/travel_data.xlsx
+python generate_docs.py --dry-run
+python generate_docs.py --excel sample_data.xlsx --dry-run
+python generate_docs.py --feishu sample_feishu_data.json --dry-run
 ```
 
-### 模式 B：飞书多维表格（无需 Excel）
+飞书模式需要环境变量：
+
+```text
+FEISHU_BASE_TOKEN
+FEISHU_TABLE_ID
+LARK_CLI_PATH
+FEISHU_ADMIN_ID
+```
+
+`FEISHU_ADMIN_ID` 可选，用于发送提醒消息。
+
+## 字段规则
+
+飞书或 Excel 出差记录建议包含：
+
+| 字段 | 说明 |
+| --- | --- |
+| 工号 | 关联 SQLite 知识库的员工 ID |
+| 护照号 | 本次记录护照号，优先级高于知识库 |
+| 出发时间 | 实际出发日期 |
+| 返程时间 | 实际返程日期 |
+| 模板类型 | 本次手动选择的模板，可为空 |
+
+模板选择优先级：
+
+```text
+本次记录的 模板类型 > 知识库里的 department
+```
+
+`模板类型` 支持：
+
+```text
+项目组
+运营组
+人事组
+供应商
+```
+
+如果 `模板类型` 为空，使用知识库里的 `department` 自动匹配。匹配失败时，预览应提示并跳过该记录。
+
+## 知识库
+
+SQLite 表 `employees` 至少包含：
+
+| 字段 | 说明 |
+| --- | --- |
+| emp_id | 工号，主键 |
+| name | 中文姓名 |
+| department | 默认部门/模板兜底来源 |
+| position | 中文职位 |
+| gender | 性别，男/女 |
+| passport | 护照号，可为空 |
+
+护照号优先级：
+
+```text
+飞书/Excel 本次记录 > 知识库
+```
+
+如果飞书有护照号而知识库为空或不同，脚本可同步更新知识库。如果同一护照号属于其他员工，应警告并跳过。
+
+## 生成规则
+
+日期计算：
+
+```text
+信函出差开始日期 = 出发时间 - 1 天
+信函出差结束日期 = 返程时间 + 1 天
+ISSUE_DATE = 信函出差开始日期 - 1 个月
+REPLY_DATE = ISSUE_DATE + 2 天
+```
+
+同一模板/部门下多人合并到同一组文件，日期范围取最早开始日期和最晚结束日期。
+
+姓名和称谓：
+
+- 邀请函使用大写拼音姓名。
+- 答复函按性别生成 `Mr.` 或 `Ms.`。
+- 职位通过脚本内 `POSITION_MAP` 翻译；未命中时保留原文并警告。
+
+## 操作准则
+
+- 先用 `--dry-run` 预览，不要直接生成。
+- 不要把真实 `knowledge_base.db`、`.env`、`generated.json`、`output/` 或生产 Excel 提交到 GitHub。
+- 检查公开版本时，要确认只包含演示姓名、示例护照号、脱敏模板和空环境变量。
+- 修改模板选择逻辑时，要同时更新 README、演示 JSON 和预览输出，避免用户不知道该填什么字段。
+- 修改脚本后至少运行：
 
 ```powershell
-cd /path/to/invitation-generator
-python generate_docs.py
-```
-
-> 飞书模式需预先设置环境变量：`FEISHU_BASE_TOKEN`、`FEISHU_TABLE_ID`、`LARK_CLI_PATH`
-
-## 业务规则
-
-### 输入格式
-
-**Excel 模式（4 列）：**
-
-| 列名 | 说明 | 示例 |
-|------|------|------|
-| 工号 | 纯数字，关联知识库 | 1 → 001 |
-| 出发时间 | 出差开始日期 | 2026-06-15 |
-| 返程时间 | 出差结束日期 | 2026-06-20 |
-| 护照号 | 护照号码 | E12345678 |
-
-**飞书模式：** 多维表格包含相同 4 个字段，无需手动维护 Excel。
-
-### 知识库 (SQLite)
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| emp_id | TEXT (主键) | 工号，3 位数字 |
-| name | TEXT | 中文姓名 |
-| department | TEXT | 项目组 / 运营组 / 人事组 |
-| position | TEXT | 中文职位 |
-| gender | TEXT | 男 / 女 |
-| passport | TEXT | 护照号（可选） |
-
-### 生成规则
-
-| 类别 | 规则 |
-|------|------|
-| 模板选择 | 项目组→项目组模板, 人事组→人事组模板, 运营组→运营组模板；未知部门跳过并警告 |
-| 增量生成 | 按"工号_出发日期"去重，只生成新增人员 |
-| 日期计算 | ①信函出发日=出发−1天, ②信函返回日=返回+1天, ③ISSUE_DATE=出发日−1个月, ④REPLY_DATE=ISSUE_DATE+2天 |
-| 日期格式 | `Month D, YYYY`（不带前导零，如 `June 9, 2026`） |
-| 姓名转换 | 中文→大写拼音，姓和名空格分隔（自建 3000+ 汉字映射表） |
-| 职位翻译 | 中文职位翻译为英文（50+ 映射表），无法翻译则保留原文 |
-| 称谓 | 邀请函：直接填姓名拼音；答复函：男→Mr.，女→Ms. |
-| 输出命名 | `<部门>_<函类型>_<姓名1>_<姓名2>.docx` |
-| 字体 | Century Gothic，12pt（小四） |
-| 多人同部门 | 合并为一封信，取最早出发+最晚返回，CC 行列全员 |
-
-## 使用方式
-
-### 飞书模式（日常使用）
-
-1. HR 在飞书多维表格填写出差记录
-2. 在 Claude Code 中输入 `/invitation` 或"生成邀请函"
-3. 脚本自动读取飞书表格 → 查知识库 → 生成 .docx
-4. 生成完成后自动回写飞书状态"已生成"
-
-### Excel 模式（批量处理）
-
-```powershell
-cd /path/to/invitation-generator
-python generate_docs.py demo_data.xlsx
-```
-
-### 一键演示
-
-```powershell
-cd /path/to/invitation-generator
-python demo.py
-```
-
-## 知识库管理
-
-```powershell
-# 初始化知识库
-python init_database.py 员工花名册.xlsx
-
-# 查看模板结构
-cd tools; python read_templates.py
-```
-
-## 依赖
-
-```
-pip install openpyxl python-docx pandas python-dateutil lxml
-```
-
-飞书模式额外需要：
-```
-npm install -g @larksuite/lark-cli
+python -m py_compile generate_docs.py init_database.py run_feishu_gui.py
+python generate_docs.py --feishu sample_feishu_data.json --dry-run
+python generate_docs.py --excel sample_data.xlsx --dry-run
 ```

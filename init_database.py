@@ -16,7 +16,7 @@ import pandas as pd
 sys.stdout.reconfigure(encoding='utf-8')
 
 # === 配置 ===
-DEFAULT_EXCEL = r"path/to/your/weekly_data.Excel.xlsx"
+DEFAULT_EXCEL = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sample_data.xlsx")
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "knowledge_base.db")
 
 

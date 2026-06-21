@@ -1,0 +1,18 @@
+[
+  {
+    "emp_id": "001",
+    "passport": "E00000001",
+    "depart_date": "2026-07-01",
+    "return_date": "2026-07-05",
+    "template_type": "项目组",
+    "record_id": "demo_record_001"
+  },
+  {
+    "emp_id": "002",
+    "passport": "E00000002",
+    "depart_date": "2026-07-03",
+    "return_date": "2026-07-08",
+    "template_type": "运营组",
+    "record_id": "demo_record_002"
+  }
+]
